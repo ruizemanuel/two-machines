@@ -1,0 +1,27 @@
+# Documentos de trabajo: se quedan en local, no van al repo
+docs/superpowers/specs/
+docs/superpowers/plans/
+
+# Dependencias y builds
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Vercel
+.vercel/
+.vgpu-cache/
+
+# Entorno
+.env
+.env.*
+!.env.example
+
+# Herramientas
+.playwright-mcp/
+*.tsbuildinfo
+
+# Sistema
+.DS_Store
+Thumbs.db
