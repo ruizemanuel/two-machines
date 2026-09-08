@@ -98,6 +98,12 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
   // claim this page makes. Bumped on every strike and every remelt; a response
   // whose generation no longer matches is dropped and its blob released.
   const mintGenRef = useRef(0);
+  // The serial the coin's face should carry, or null while it is molten. The
+  // browser cannot compute it — serialFromState hashes with node:crypto and
+  // stays on the server — so it arrives with the mint response and is applied
+  // in the frame callback below, which is the only place the scene is known to
+  // exist and not to have been disposed.
+  const serialRef = useRef<string | null>(null);
   // Set once WebGPU is confirmed absent, or once init() has failed twice in a
   // row. Stays null through the very first render — including hydration — so
   // the server-rendered markup and the first client render match; the switch
@@ -121,6 +127,9 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
       if (!readyRef.current || a.phase !== "frozen") return;
       mintGenRef.current += 1;
       a.phase = "molten";
+      // Molten metal carries no serial: the face has to go blank again, or the
+      // coin keeps a number it no longer has.
+      serialRef.current = null;
       onPhaseChange("molten");
     },
   }), [onPhaseChange]);
@@ -168,12 +177,24 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
       target.onResize(({ width, height }) => scene.resize(width, height));
 
       let last = performance.now();
+      // What the relief target currently carries. Local to this scene, not a
+      // ref: a second mount builds a new scene whose face starts blank again.
+      let engraved: string | null = null;
       readyRef.current = true;
 
       loop = frameLoop(gpu, () => {
         const now = performance.now();
         const dt = Math.min((now - last) / 1000, 0.05);
         last = now;
+
+        // setSerial draws to an offscreen target rather than the Surface, so it
+        // could run outside the frame callback — it runs here anyway, because
+        // this is the one place that cannot execute before the scene is built
+        // or after the cleanup below disposes the device.
+        if (serialRef.current !== engraved) {
+          engraved = serialRef.current;
+          scene.setSerial(engraved);
+        }
 
         const a = animRef.current;
         if (a.phase === "striking") {
@@ -197,6 +218,10 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
                 return;
               }
               if (!result) { onMintFailed(); return; }
+              // The card and the live coin have to be the same object: the
+              // server struck those sixteen hex digits into its PNG, so they
+              // get struck into the face on screen too.
+              serialRef.current = result.serial;
               onMinted(result);
             });
           }

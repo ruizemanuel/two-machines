@@ -4,7 +4,7 @@ import { target } from "vgpu";
 import { disposeGpu, sharedGpu } from "../lib/gpu-server";
 import { createScene } from "../lib/coin/scene";
 import { INITIAL } from "../lib/coin/state";
-import { expectGolden } from "./helpers/golden";
+import { compare, expectGolden } from "./helpers/golden";
 import { SOFTWARE } from "./helpers/software";
 
 // Deliberately outside the skipIf block: this one is a text search over a source
@@ -40,4 +40,25 @@ describe.skipIf(!SOFTWARE)("scene render", () => {
     scene.render(out, { ...INITIAL, melt: 0, spin: 0, time: 0 });
     await expectGolden("scene-frozen", await out.read(), 480, 360, gpu.adapter);
   }, 90_000);
+
+  // setSerial(null) is the path a remelt takes: the face goes back to blank.
+  // Nothing else in the suite reaches serial_on = 0 through the scene, and the
+  // browser now depends on it — a coin that keeps a serial it no longer has
+  // breaks the same claim an unengraved one does.
+  it("takes the serial back off the face", async () => {
+    const gpu = await sharedGpu();
+    const out = target(gpu, { size: [480, 360], format: "rgba8unorm" });
+    const scene = createScene(gpu, 480, 360);
+    const frozen = { ...INITIAL, melt: 0, spin: 0, time: 0 };
+
+    scene.setSerial("5de3f2beb643864b");
+    scene.render(out, frozen);
+    const struck = await out.read();
+
+    scene.setSerial(null);
+    scene.render(out, frozen);
+    const blank = await out.read();
+
+    expect(compare(struck, blank)).toBeGreaterThan(0);
+  }, 180_000);
 });
