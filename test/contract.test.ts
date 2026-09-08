@@ -1,5 +1,5 @@
-// Opt-in: solo corre si se le pasa una URL desplegada. Es el unico test que
-// comprueba de verdad el criterio 3 (< 1,5 s en caliente) y §8 del spec.
+// Opt-in: only runs when given a deployed URL. It is the only test that
+// actually checks acceptance criterion 3 (< 1.5 s warm) and §8 of the spec.
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 

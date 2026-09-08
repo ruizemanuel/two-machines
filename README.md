@@ -2,7 +2,7 @@
 
 La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica.
 
-No hay ningún PNG en el repo. La moneda que ves es una fórmula — tres pases WGSL sobre `vgpu` — y esa misma fórmula corre en dos sitios: en tu navegador, con tu GPU, cuando pulsás "Acuñar"; y en el servidor, sin GPU, cuando ese acuñado dispara `/api/mint` para generar la tarjeta de previsualización que verá quien reciba el link. El punto de la pieza es que las dos coinciden.
+No hay ningún PNG en el repo. La moneda que ves es una fórmula — tres pases WGSL sobre `vgpu` — y esa misma fórmula corre en dos sitios: en tu navegador, con tu GPU, cuando pulsás "Acuñar"; y en el servidor, sin GPU, cuando ese acuñado dispara `/api/mint` para generar la tarjeta de previsualización que verá quien reciba el link. El punto de la pieza es que las dos se corresponden — con el matiz de la sección siguiente.
 
 ## La frase permitida sobre el renderer
 
