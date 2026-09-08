@@ -47,10 +47,13 @@ export default function Page() {
 
   const handleMinted = useCallback((result: MintResult) => {
     setServer({ kind: "done", renderMs: result.renderMs });
-    // The serial is struck into the metal in uppercase — the 5x7 bitmap font
-    // only has uppercase glyphs — while serialFromState returns lowercase hex.
-    // Uppercasing here keeps the screen reading the same text as the coin.
-    setCard({ imageUrl: result.imageUrl, serial: result.serial.toUpperCase() });
+    setCard((prev) => {
+      if (prev) URL.revokeObjectURL(prev.imageUrl);
+      // The serial is struck into the metal in uppercase — the 5x7 bitmap font
+      // only has uppercase glyphs — while serialFromState returns lowercase hex.
+      // Uppercasing here keeps the screen reading the same text as the coin.
+      return { imageUrl: result.imageUrl, serial: result.serial.toUpperCase() };
+    });
   }, []);
 
   const handleClick = useCallback(() => {

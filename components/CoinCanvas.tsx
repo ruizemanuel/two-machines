@@ -84,11 +84,19 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
     spinTo: 0,
     strikeStart: 0,
   });
+  // A mint request belongs to one strike. Melting back down and striking again
+  // while the first request is still in flight would otherwise let the older
+  // response land on top of the newer one, or land at all after a remelt — the
+  // card would show a coin that is not the one on screen, which is the exact
+  // claim this page makes. Bumped on every strike and every remelt; a response
+  // whose generation no longer matches is dropped and its blob released.
+  const mintGenRef = useRef(0);
 
   useImperativeHandle(ref, () => ({
     strike() {
       const a = animRef.current;
       if (!readyRef.current || a.phase !== "molten") return;
+      mintGenRef.current += 1;
       a.phase = "striking";
       a.spinFrom = a.state.spin;
       a.spinTo = alignedSpin(a.state.spin);
@@ -98,6 +106,7 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
     remelt() {
       const a = animRef.current;
       if (!readyRef.current || a.phase !== "frozen") return;
+      mintGenRef.current += 1;
       a.phase = "molten";
       onPhaseChange("molten");
     },
@@ -148,7 +157,12 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
             const frozen = canonicalize({ ...a.state, spin: a.spinTo, melt: 0, press: 0, flash: 0, time: 0 });
             a.state = frozen;
             onPhaseChange("frozen");
-            void requestMint(frozen).then((result) => { if (result) onMinted(result); });
+            const gen = mintGenRef.current;
+            void requestMint(frozen).then((result) => {
+              if (!result) return;
+              if (gen !== mintGenRef.current) { URL.revokeObjectURL(result.imageUrl); return; }
+              onMinted(result);
+            });
           }
         } else {
           a.state = advance(a.state, a.phase, dt, 0);
