@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import fs from "node:fs";
+import path from "node:path";
 import { target } from "vgpu";
 import { disposeGpu, sharedGpu } from "../lib/gpu-server";
 import { createScene } from "../lib/coin/scene";
@@ -22,10 +23,47 @@ describe("scene boundary", () => {
     /\bDate\s*\.\s*now\b/, /\bnew\s+Date\b/, /\bperformance\s*\.\s*now\b/,
   ];
 
+  // Everything the browser reaches through scene.ts, not scene.ts alone. It
+  // imports ./words and ./state, and a Date.now() added to either kills the
+  // server render exactly as surely — the single-file version of this guard
+  // would have said nothing. The one real violation this branch found was
+  // itself transitive: node:crypto reaching the client through serialToWords,
+  // which is the whole reason lib/coin/words.ts exists.
+  const ENTRY = path.join("lib", "coin", "scene.ts");
+
+  function moduleGraph(entry: string): string[] {
+    const seen = new Set<string>();
+    const visit = (file: string) => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      const src = fs.readFileSync(file, "utf8");
+      // Relative specifiers only: a bare "vgpu" is a dependency, not this code.
+      // They carry no extension — Turbopack cannot resolve a .js pointing at a
+      // .ts — so the candidates are appended here. A .wgsl import matches none
+      // of them and is skipped, which is right: WGSL has no page to reach.
+      for (const [, specifier] of src.matchAll(/\bfrom\s+"(\.[^"]*)"/g)) {
+        const base = path.join(path.dirname(file), specifier);
+        const hit = [`${base}.ts`, `${base}.tsx`, path.join(base, "index.ts")]
+          .find((candidate) => fs.existsSync(candidate));
+        if (hit) visit(hit);
+      }
+    };
+    visit(entry);
+    return [...seen];
+  }
+
   it("never reaches the page or starts a clock of its own", () => {
-    const src = fs.readFileSync("lib/coin/scene.ts", "utf8");
+    const files = moduleGraph(ENTRY);
+    // A resolver that quietly found nothing would leave this checking one file
+    // again, and passing for the same reason it passed before.
+    expect(files).toContain(path.join("lib", "coin", "words.ts"));
+    expect(files).toContain(path.join("lib", "coin", "state.ts"));
     // Collect rather than assert one by one, so a failure names the offender.
-    expect(FORBIDDEN.filter((pattern) => pattern.test(src)).map(String)).toEqual([]);
+    const offenders = files.flatMap((file) => {
+      const src = fs.readFileSync(file, "utf8");
+      return FORBIDDEN.filter((pattern) => pattern.test(src)).map((pattern) => `${file} ${pattern}`);
+    });
+    expect(offenders).toEqual([]);
   });
 });
 
