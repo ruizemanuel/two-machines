@@ -1,32 +1,18 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { childEnv } from "../../../lib/gpu-server";
-import { INITIAL, canonicalize } from "../../../lib/coin/state";
 import { serialFromState } from "../../../lib/coin/serial";
 import { SHADER_VERSION } from "../../../lib/coin/version";
-import { numParam } from "../../../lib/coin/query";
+import { mintRequest } from "../../../lib/coin/query";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX = 2048;
-
 export async function GET(request: Request): Promise<Response> {
-  const q = new URL(request.url).searchParams;
-  const width = Math.min(Math.max(Math.round(numParam(q.get("w"), 1200)), 16), MAX);
-  const height = Math.min(Math.max(Math.round(numParam(q.get("h"), 630)), 16), MAX);
-  // Quantised before hashing AND before rendering. The serial comes off the grid
-  // encodeState rounds to, so the child has to draw that same grid — otherwise two
-  // states that share a serial could render different pixels.
-  const state = canonicalize({
-    ...INITIAL,
-    spin: numParam(q.get("spin"), 0),
-    melt: numParam(q.get("melt"), 0),
-    mouse: [numParam(q.get("mx"), 0), numParam(q.get("my"), 0)] as const,
-    time: 0,
-    flash: 0,
-    press: 0,
-  });
+  // Sizes restricted to the two the piece renders and the floats clamped to
+  // their shader ranges — see lib/coin/query.ts for why the parameter space is
+  // not the endpoint's to leave open.
+  const { width, height, state } = mintRequest(new URL(request.url).searchParams);
 
   // Known before rendering: the serial comes from the state, not from the pixels.
   const serial = serialFromState(state, SHADER_VERSION);
