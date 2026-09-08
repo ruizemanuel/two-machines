@@ -21,6 +21,8 @@ npm run dev
 
 Abre `http://localhost:3000`. El canvas usa tu GPU real vía WebGPU; si el navegador no lo soporta, la página degrada al PNG que devuelve el servidor a sangre, con el titular encima — nunca a un `Error:` en pantalla.
 
+`npm run dev` dispara antes el script `predev`, que compila `dist/render-child.mjs` con esbuild. Ese hijo es el que renderiza en el servidor y `dist/` no está en el repo, así que sin ese paso `/api/mint` respondería 500 en un clon recién hecho. Si hace falta compilarlo suelto — por ejemplo para correr sólo la ruta — es `npm run build:child`.
+
 `/api/mint` en local también renderiza sin GPU — usa el mismo camino de proceso hijo que producción — pero necesita el renderer software instalado primero:
 
 ```bash
