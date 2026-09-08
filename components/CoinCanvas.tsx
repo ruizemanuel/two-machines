@@ -3,13 +3,17 @@
 // The live half of the argument: a WebGPU canvas that renders the same coin
 // the server renders in lib/coin/scene.ts. No DOM, no navigator and no clock
 // live in that module — this component is where those things are allowed.
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { init, surface, frameLoop, type FrameLoopHandle, type Gpu, type Surface } from "vgpu";
 import { createScene, type Scene } from "../lib/coin/scene";
 import { INITIAL, advance, alignedSpin, canonicalize, type CoinState, type Phase } from "../lib/coin/state";
 import StaticFallback from "./StaticFallback";
 
 const STRIKE_MS = 900;
+// Ported from the mockup, not reinvented: the camera closes 5% of the distance
+// to the pointer per frame, which reads as the coin leaning rather than
+// snapping. Anything faster turns the molten disc into a mirror of the cursor.
+const MOUSE_LERP = 0.05;
 
 // Duplicated from lib/coin/state.ts on purpose: that module does not export its
 // easing curve, and the spin interpolation below needs the exact same shape
@@ -111,6 +115,14 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
   // in the frame callback below, which is the only place the scene is known to
   // exist and not to have been disposed.
   const serialRef = useRef<string | null>(null);
+  // Where the pointer is, in the same [-1, 1] box the shader's camera expects.
+  // CoinState.mouse holds the smoothed value that actually reaches the scene;
+  // this is only the target it is chasing.
+  const pointerRef = useRef<readonly [number, number]>([0, 0]);
+  // prefers-reduced-motion, read live. The mockup honoured it in two places and
+  // the port dropped both: the idle spin stops, and state.time is pinned at 0 —
+  // scene.ts derives the film grain from it, so the grain stops crawling too.
+  const reducedRef = useRef(false);
   // Set once WebGPU is confirmed absent, or once init() has failed twice in a
   // row. Stays null through the very first render — including hydration — so
   // the server-rendered markup and the first client render match; the switch
@@ -125,28 +137,65 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
     onUnavailable(reason);
   };
 
-  useImperativeHandle(ref, () => ({
-    strike() {
-      const a = animRef.current;
-      if (!readyRef.current || a.phase !== "molten") return;
-      mintGenRef.current += 1;
-      a.phase = "striking";
-      a.spinFrom = a.state.spin;
-      a.spinTo = alignedSpin(a.state.spin);
-      a.strikeStart = performance.now();
-      onPhaseChange("striking");
-    },
-    remelt() {
-      const a = animRef.current;
-      if (!readyRef.current || a.phase !== "frozen") return;
-      mintGenRef.current += 1;
-      a.phase = "molten";
-      // Molten metal carries no serial: the face has to go blank again, or the
-      // coin keeps a number it no longer has.
-      serialRef.current = null;
-      onPhaseChange("molten");
-    },
-  }), [onPhaseChange]);
+  const strike = useCallback(() => {
+    const a = animRef.current;
+    if (!readyRef.current || a.phase !== "molten") return;
+    mintGenRef.current += 1;
+    a.phase = "striking";
+    a.spinFrom = a.state.spin;
+    a.spinTo = alignedSpin(a.state.spin);
+    a.strikeStart = performance.now();
+    onPhaseChange("striking");
+  }, [onPhaseChange]);
+
+  const remelt = useCallback(() => {
+    const a = animRef.current;
+    if (!readyRef.current || a.phase !== "frozen") return;
+    mintGenRef.current += 1;
+    a.phase = "molten";
+    // Molten metal carries no serial: the face has to go blank again, or the
+    // coin keeps a number it no longer has.
+    serialRef.current = null;
+    onPhaseChange("molten");
+  }, [onPhaseChange]);
+
+  useImperativeHandle(ref, () => ({ strike, remelt }), [strike, remelt]);
+
+  // The mockup let the canvas take the click too, and app/globals.css still
+  // carries its `cursor: pointer` — the affordance without the action. This
+  // restores the action rather than dropping the affordance, through the same
+  // two methods the button drives; both are no-ops outside their phase, so a
+  // click during the strike does nothing. The button stays the keyboard path:
+  // the canvas is aria-hidden and never becomes the only way in.
+  const handleCanvasClick = useCallback(() => {
+    const { phase } = animRef.current;
+    if (phase === "molten") strike();
+    else if (phase === "frozen") remelt();
+  }, [strike, remelt]);
+
+  // The pointer and the motion preference are DOM, so they are read here and
+  // reach lib/coin/scene.ts only as numbers inside CoinState. Both listeners
+  // come off on the same path they went on, like the GPU below.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPointer = (event: PointerEvent) => {
+      pointerRef.current = [
+        (event.clientX / window.innerWidth) * 2 - 1,
+        1 - (event.clientY / window.innerHeight) * 2,
+      ];
+    };
+    window.addEventListener("pointermove", onPointer, { passive: true });
+
+    const motion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
+    reducedRef.current = motion?.matches ?? false;
+    const onMotion = (event: MediaQueryListEvent) => { reducedRef.current = event.matches; };
+    motion?.addEventListener("change", onMotion);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointer);
+      motion?.removeEventListener("change", onMotion);
+    };
+  }, []);
 
   useEffect(() => {
     // navigator only exists client-side; this effect never runs during the
@@ -211,10 +260,29 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
         }
 
         const a = animRef.current;
+        const reduced = reducedRef.current;
+
+        // The coin leans towards the pointer while there is still metal to
+        // move. Once frozen the state is exactly what was minted — letting the
+        // camera drift on would leave the card showing a frame that is no
+        // longer on screen, which is the one thing this page promises.
+        if (a.phase !== "frozen") {
+          const [tx, ty] = pointerRef.current;
+          const [mx, my] = a.state.mouse;
+          a.state = {
+            ...a.state,
+            mouse: [mx + (tx - mx) * MOUSE_LERP, my + (ty - my) * MOUSE_LERP],
+          };
+        }
+
         if (a.phase === "striking") {
           const k = Math.min((now - a.strikeStart) / STRIKE_MS, 1);
           const eased = advance(a.state, "striking", dt, k);
-          a.state = { ...eased, spin: a.spinFrom + (a.spinTo - a.spinFrom) * easeInOutCubic(k) };
+          a.state = {
+            ...eased,
+            spin: a.spinFrom + (a.spinTo - a.spinFrom) * easeInOutCubic(k),
+            time: reduced ? 0 : eased.time,
+          };
           if (k >= 1) {
             a.phase = "frozen";
             // time back to 0 here too: the mint render freezes it at 0, and the
@@ -240,7 +308,11 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
             });
           }
         } else {
-          a.state = advance(a.state, a.phase, dt, 0);
+          const advanced = advance(a.state, a.phase, dt, 0);
+          // Reduced motion: no idle spin, and time stays at 0 so the grain is
+          // static. The strike itself still plays — it is the answer to a
+          // press, not decoration — and the pointer still moves the camera.
+          a.state = reduced ? { ...advanced, spin: a.state.spin, time: 0 } : advanced;
         }
         scene.render(target, a.state);
       }, { fps: 60 });
@@ -256,5 +328,5 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
   }, []);
 
   if (fallback) return <StaticFallback reason={fallback} />;
-  return <canvas ref={canvasRef} aria-hidden />;
+  return <canvas ref={canvasRef} aria-hidden onClick={handleCanvasClick} />;
 });
