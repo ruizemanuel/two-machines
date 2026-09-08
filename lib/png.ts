@@ -30,6 +30,18 @@ function chunk(type: string, body: Uint8Array): Uint8Array {
 
 /** 8-bit RGBA, no filter. Deterministic output: same bytes for same input. */
 export function encodePng(rgba: Uint8Array, width: number, height: number): Uint8Array {
+  // Target.read() returns bytes in the target's own format, and rgba8unorm,
+  // rgba16float and r16float targets all coexist here. Without this guard,
+  // passing the wrong target's read does not fail: it truncates, zeroes the
+  // rest, and writes a PNG that looks fine. That is how a golden image gets
+  // poisoned silently.
+  const expected = width * height * 4;
+  if (rgba.length !== expected) {
+    throw new RangeError(
+      `encodePng: expected ${expected} bytes for ${width}x${height} RGBA, got ${rgba.length}`,
+    );
+  }
+
   const ihdr = new Uint8Array(13);
   const head = new DataView(ihdr.buffer);
   head.setUint32(0, width);

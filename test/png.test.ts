@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inflateSync } from "node:zlib";
+import { crc32, inflateSync } from "node:zlib";
 import { encodePng } from "../lib/png.js";
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -34,5 +34,25 @@ describe("encodePng", () => {
   it("is byte-identical for identical input", () => {
     const rgba = new Uint8Array(4 * 4 * 4).fill(120);
     expect([...encodePng(rgba, 4, 4)]).toEqual([...encodePng(rgba, 4, 4)]);
+  });
+
+  it("rejects a buffer that is not width * height * 4", () => {
+    // The mistake this catches: Target.read() returns bytes in the target's own
+    // format, and this project has rgba16float and r16float targets next to the
+    // rgba8unorm ones. Encoding an 8-bytes-per-pixel read as RGBA8 would write a
+    // plausible-looking, wrong PNG instead of failing.
+    expect(() => encodePng(new Uint8Array(2 * 2 * 8), 2, 2)).toThrow(RangeError);
+  });
+
+  it("writes CRCs that an independent implementation agrees with", () => {
+    // Every other test in this file reads around the CRC fields, so a wrong byte
+    // range or a dropped final XOR in crc32() would pass all of them. zlib.crc32
+    // is Node's own implementation: an oracle this module does not share code with.
+    const png = encodePng(new Uint8Array(2 * 2 * 4), 2, 2);
+    const view = new DataView(png.buffer, png.byteOffset);
+    // IHDR: length 8..11, type+data 12..28, CRC at 29
+    expect(view.getUint32(29)).toBe(crc32(png.subarray(12, 29)));
+    // and IEND, an empty chunk, has the well-known constant for its CRC
+    expect(view.getUint32(png.length - 4)).toBe(0xae426082);
   });
 });
