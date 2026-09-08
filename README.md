@@ -83,13 +83,19 @@ El objetivo del §12 del spec es 60 KB gzip de JavaScript, vgpu incluido. Medido
 |---|---|
 | **La pieza** (vgpu + `lib/coin/scene.ts` + la página) | **51,8 KB** |
 | React + el runtime de Next | ~156 KB |
-| **Total que descarga el visitante** | **221,2 KB** |
+| **Total de JavaScript que descarga el visitante** | **221,2 KB** |
 
 El presupuesto de 60 KB siempre fue sobre lo que esta pieza controla — vgpu, la escena y la página — y ahí se cumple con margen. El framework no entra en ese número porque ningún cuidado aquí lo reduciría: se reporta, no se le pone tope. Ambas cifras se publican para no esconder ninguna.
 
 Ese 51,8 KB no salió gratis. `lib/coin/scene.ts`, que corre en el navegador, importaba `serialToWords` desde `lib/coin/serial.ts` — y `serial.ts` importa `node:crypto` para el hash del número de serie. Como `components/CoinCanvas.tsx` es un componente cliente que llega hasta `scene.ts`, Turbopack empaquetaba el `crypto` y el `Buffer` de Node enteros para el navegador — sha256, md5, ripemd, base64 — por cuatro líneas de `parseInt`. Separar esa función en `lib/coin/words.ts`, sin ninguna dependencia de Node, bajó el total de 348,9 KB a 221,2 KB: **127,7 KB** por partir un fichero en dos.
 
-Assets descargados: **0 bytes** — no hay ningún PNG, WOFF ni GLB en `public/`; `test/budgets.test.ts` lo verifica recorriendo el directorio.
+Esas cifras son **221,2 KB de JavaScript**: no incluyen ni el chunk de CSS que sirve Next ni las dos fuentes web de la sección siguiente.
+
+### Assets
+
+En el repo no hay ningún PNG, WOFF ni GLB propio: `public/` está vacío y `test/budgets.test.ts` lo verifica recorriendo el directorio. La moneda — el disco, los dentículos, la leyenda `VGPU.SH` y el número de serie — sale entera de los `.wgsl`, con la fuente bitmap 5×7 empotrada como constantes `u32` en `shaders/lib/font5x7.wgsl`.
+
+Con una excepción, y conviene decirla en vez de redondear a cero: **`app/layout.tsx` carga Geist y Geist Mono desde Google Fonts**, así que el visitante sí descarga dos fuentes web. Son las de la interfaz — el titular, los indicadores, el botón — y son la única excepción a los cero assets. **Ninguna entra en el render:** ni el canvas ni el PNG del servidor las tocan, y por eso el servidor sin GPU puede dibujar la misma moneda sin tener instalada ninguna fuente.
 
 ## Desplegar
 
