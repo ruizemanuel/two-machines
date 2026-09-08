@@ -1,8 +1,9 @@
 // shaders/relief.wgsl
 // Pass 0: the coin face, generated entirely on the GPU.
 // On the server there is no canvas 2D, and any alternative rasterizer would give
-// different pixels than the browser. Generating it here is what maintains
-// determinism and, by the way, the promise of zero assets.
+// different pixels than the browser. Generating it here is what keeps the render
+// bit-identical on the pinned CPU renderer and, by the way, the promise of zero
+// assets.
 import { glyph_mask } from "./lib/font5x7.wgsl";
 import { sd_triangle, sd_segment } from "./lib/sdf.wgsl";
 
@@ -31,7 +32,6 @@ fn band(d: f32, w: f32) -> f32 { return 1.0 - smoothstep(0.0, w, abs(d)); }
   let p = vec2f(uv.x - 0.5, 0.5 - uv.y);
   let r = length(p);
   let ang = atan2(p.x, p.y);        // 0 up, clockwise
-  let px = 1.0 / 512.0;             // width of a pixel at base resolution
 
   var h = 0.0;
 
