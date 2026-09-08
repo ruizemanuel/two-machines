@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { SITE_DESCRIPTION, SITE_TITLE } from "../lib/meta";
 import "./globals.css";
 
+// Shared with the card drawn on the page: the frame around the image has to be
+// the real one, or §9's claim only holds for the picture inside it.
 export const metadata: Metadata = {
-  title: "Dos máquinas",
-  description: "La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica.",
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
