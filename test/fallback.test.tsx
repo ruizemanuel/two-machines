@@ -2,7 +2,7 @@
 // test/fallback.test.tsx
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import StaticFallback from "../components/StaticFallback.js";
+import StaticFallback from "../components/StaticFallback";
 
 describe("degradation", () => {
   it("shows the server-rendered image when WebGPU is missing", () => {
