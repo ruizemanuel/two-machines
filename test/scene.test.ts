@@ -11,11 +11,21 @@ import { SOFTWARE } from "./helpers/software.js";
 // file, it needs no GPU, and it is the guard on the constraint that makes the
 // whole project possible. It has to run on every machine, every time.
 describe("scene boundary", () => {
-  it("never references the DOM", () => {
+  // Word boundaries, not substrings. The substring form was wrong in both
+  // directions: it tripped on an innocent "documentation" in a comment, and it
+  // let `performance.now()` through — a real clock, in Node and in the browser
+  // alike. Every entry below names something that either reaches the page or
+  // starts a clock of its own, and either one breaks the server render.
+  const FORBIDDEN = [
+    /\bwindow\b/, /\bdocument\b/, /\bnavigator\b/, /\blocalStorage\b/,
+    /\brequestAnimationFrame\b/, /\bsetTimeout\b/, /\bsetInterval\b/,
+    /\bDate\s*\.\s*now\b/, /\bnew\s+Date\b/, /\bperformance\s*\.\s*now\b/,
+  ];
+
+  it("never reaches the page or starts a clock of its own", () => {
     const src = fs.readFileSync("lib/coin/scene.ts", "utf8");
-    for (const forbidden of ["window", "document", "navigator", "Date.now", "requestAnimationFrame"]) {
-      expect(src).not.toContain(forbidden);
-    }
+    // Collect rather than assert one by one, so a failure names the offender.
+    expect(FORBIDDEN.filter((pattern) => pattern.test(src)).map(String)).toEqual([]);
   });
 });
 
