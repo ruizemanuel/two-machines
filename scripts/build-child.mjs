@@ -27,4 +27,4 @@ await build({
   external: ["vgpu", "vgpu/node", "@vgpu/*", "webgpu"],
   plugins: [wgsl],
 });
-console.log("dist/render-child.mjs listo");
+console.log("dist/render-child.mjs ready");

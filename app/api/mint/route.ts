@@ -51,7 +51,15 @@ export async function GET(request: Request): Promise<Response> {
   const err: Buffer[] = [];
   child.stdout.on("data", (d) => out.push(d));
   child.stderr.on("data", (d) => err.push(d));
-  const code: number = await new Promise((resolve) => child.on("close", resolve));
+  // 'error' fires when the process could not be spawned at all — a fork that ran
+  // out of resources, a permissions problem. With no listener the event throws
+  // where nothing can catch it AND the promise never settles, so the request
+  // hangs until maxDuration instead of failing in milliseconds. (A missing
+  // script is not this case: node itself exists, so it just exits non-zero.)
+  const code: number | null = await new Promise((resolve) => {
+    child.on("error", (e: Error) => { err.push(Buffer.from(e.message)); resolve(-1); });
+    child.on("close", resolve);
+  });
 
   if (code !== 0) {
     return Response.json(
