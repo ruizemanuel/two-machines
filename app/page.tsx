@@ -17,7 +17,14 @@ import type { Phase } from "../lib/coin/state";
 
 type ServerStatus =
   | { readonly kind: "idle" }
-  | { readonly kind: "done"; readonly renderMs: number };
+  // Set the instant a strike freezes and the /api/mint request goes out —
+  // covers a cold serverless function's ~2.4 s start without looking hung.
+  | { readonly kind: "pending" }
+  | { readonly kind: "done"; readonly renderMs: number }
+  // The request came back non-OK, or failed outright (network error, etc).
+  // The coin itself is unaffected — it already froze locally — this only
+  // changes what the server indicator says.
+  | { readonly kind: "failed" };
 
 type Card = { readonly imageUrl: string; readonly serial: string };
 
@@ -42,6 +49,10 @@ export default function Page() {
         if (prev) URL.revokeObjectURL(prev.imageUrl);
         return null;
       });
+    } else if (next === "frozen") {
+      // The strike just finished, which is also when CoinCanvas fires off the
+      // /api/mint request — mark the server as working before it answers.
+      setServer({ kind: "pending" });
     }
   }, []);
 
@@ -56,17 +67,31 @@ export default function Page() {
     });
   }, []);
 
+  const handleMintFailed = useCallback(() => {
+    // The coin stays exactly as it is — frozen, locally rendered — this only
+    // tells the server indicator the round trip did not come back.
+    setServer({ kind: "failed" });
+  }, []);
+
   const handleClick = useCallback(() => {
     if (phase === "molten") coinRef.current?.strike();
     else if (phase === "frozen") coinRef.current?.remelt();
   }, [phase]);
 
   const serverText =
-    server.kind === "idle" ? "servidor · esperando" : `servidor · sin gpu · ${Math.round(server.renderMs)} ms`;
+    server.kind === "idle" ? "servidor · esperando"
+    : server.kind === "pending" ? "servidor · renderizando…"
+    : server.kind === "failed" ? "servidor · sin respuesta"
+    : `servidor · sin gpu · ${Math.round(server.renderMs)} ms`;
 
   return (
     <div id="stage">
-      <CoinCanvas ref={coinRef} onPhaseChange={handlePhaseChange} onMinted={handleMinted} />
+      <CoinCanvas
+        ref={coinRef}
+        onPhaseChange={handlePhaseChange}
+        onMinted={handleMinted}
+        onMintFailed={handleMintFailed}
+      />
 
       <div id="head">
         <h1>La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica.</h1>

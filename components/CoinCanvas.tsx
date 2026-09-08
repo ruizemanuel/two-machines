@@ -3,10 +3,11 @@
 // The live half of the argument: a WebGPU canvas that renders the same coin
 // the server renders in lib/coin/scene.ts. No DOM, no navigator and no clock
 // live in that module — this component is where those things are allowed.
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { init, surface, frameLoop, type FrameLoopHandle, type Gpu, type Surface } from "vgpu";
 import { createScene, type Scene } from "../lib/coin/scene";
 import { INITIAL, advance, alignedSpin, canonicalize, type CoinState, type Phase } from "../lib/coin/state";
+import StaticFallback from "./StaticFallback";
 
 const STRIKE_MS = 900;
 
@@ -32,9 +33,13 @@ export type CoinCanvasProps = {
   /** Fired whenever the coin's phase changes, so the page can drive the button
    *  label and the two indicators without owning the animation itself. */
   onPhaseChange(phase: Phase): void;
-  /** Fired once the server round trip for a strike succeeds. A failed request
-   *  is left alone here — Task 13 is where that gets a real fallback. */
+  /** Fired once the server round trip for a strike succeeds. */
   onMinted(result: MintResult): void;
+  /** Fired when that round trip fails — a bad status or a network error. The
+   *  coin itself is already frozen locally (striking happened before this
+   *  request was ever sent), so this only drives the server indicator into
+   *  "sin respuesta"; nothing about the coin on screen changes. */
+  onMintFailed(): void;
 };
 
 type Anim = {
@@ -62,14 +67,16 @@ async function requestMint(state: CoinState): Promise<MintResult | null> {
       imageUrl: URL.createObjectURL(blob),
     };
   } catch {
-    // Network failure, aborted request, etc. Task 13 turns this into the
-    // "servidor · sin respuesta" indicator; here it just leaves the coin frozen.
+    // Network failure, aborted request, etc. Reported the same way as a
+    // non-OK response above: both simply mean the server did not answer. The
+    // caller turns a null result into the "servidor · sin respuesta"
+    // indicator; the coin itself stays frozen either way.
     return null;
   }
 }
 
 export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function CoinCanvas(
-  { onPhaseChange, onMinted },
+  { onPhaseChange, onMinted, onMintFailed },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -91,6 +98,12 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
   // claim this page makes. Bumped on every strike and every remelt; a response
   // whose generation no longer matches is dropped and its blob released.
   const mintGenRef = useRef(0);
+  // Set once WebGPU is confirmed absent, or once init() has failed twice in a
+  // row. Stays null through the very first render — including hydration — so
+  // the server-rendered markup and the first client render match; the switch
+  // to StaticFallback happens inside the client-only effect below, as an
+  // ordinary post-mount state update rather than a hydration mismatch.
+  const [fallback, setFallback] = useState<"no-webgpu" | "device-lost" | null>(null);
 
   useImperativeHandle(ref, () => ({
     strike() {
@@ -114,10 +127,13 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
 
   useEffect(() => {
     // navigator only exists client-side; this effect never runs during the
-    // server render, but the guard keeps the intent explicit. A browser with no
-    // WebGPU simply never starts the loop — the fallback UI for that case is
-    // Task 13's StaticFallback, not this component.
-    if (typeof navigator === "undefined" || !("gpu" in navigator)) return;
+    // server render, but the guard keeps the intent explicit. A browser with
+    // no WebGPU degrades to StaticFallback instead of ever starting the loop.
+    if (typeof navigator === "undefined") return;
+    if (!("gpu" in navigator)) {
+      setFallback("no-webgpu");
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -126,7 +142,21 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
     let loop: FrameLoopHandle | null = null;
 
     void (async () => {
-      const initialized = await init();
+      let initialized: Gpu;
+      try {
+        initialized = await init();
+      } catch {
+        // One retry: a transient failure — a lost device, a driver hiccup —
+        // often succeeds on the second attempt. A second failure is treated
+        // as a real device loss and degrades to the server's PNG instead of
+        // retrying forever.
+        try {
+          initialized = await init();
+        } catch {
+          if (!cancelled) setFallback("device-lost");
+          return;
+        }
+      }
       if (cancelled) { initialized.dispose(); return; }
       gpu = initialized;
 
@@ -159,8 +189,14 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
             onPhaseChange("frozen");
             const gen = mintGenRef.current;
             void requestMint(frozen).then((result) => {
-              if (!result) return;
-              if (gen !== mintGenRef.current) { URL.revokeObjectURL(result.imageUrl); return; }
+              if (gen !== mintGenRef.current) {
+                // A later strike or remelt started while this request was in
+                // flight; its outcome — success or failure — no longer
+                // describes the coin on screen.
+                if (result) URL.revokeObjectURL(result.imageUrl);
+                return;
+              }
+              if (!result) { onMintFailed(); return; }
               onMinted(result);
             });
           }
@@ -177,8 +213,9 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
       loop?.stop();
       gpu?.dispose();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onPhaseChange/onMinted are stable useCallback identities from the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onPhaseChange/onMinted/onMintFailed are stable useCallback identities from the page.
   }, []);
 
+  if (fallback) return <StaticFallback reason={fallback} />;
   return <canvas ref={canvasRef} aria-hidden />;
 });
