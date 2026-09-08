@@ -10,7 +10,8 @@
   "scripts": {
     "test": "vitest run",
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "vercel-build": "node ./scripts/prepare-vulkan.mjs && next build"
   },
   "keywords": [],
   "author": "",
