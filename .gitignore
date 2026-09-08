@@ -25,3 +25,6 @@ build/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Workspace del ejecutor de planes (scratch, no es codigo)
+.superpowers/
