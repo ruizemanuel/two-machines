@@ -11,6 +11,10 @@ const RENDER_FILES = [
 ];
 
 const config = {
+  // next build/dev otherwise writes AGENTS.md and a one-line CLAUDE.md into the
+  // repo root on every run. This repo is a public argument; it carries only what
+  // its author put there.
+  agentRules: false,
   // The native Dawn binding is loaded with a runtime-computed require() inside
   // node_modules/webgpu, which no bundler can resolve statically. These three are
   // already listed in outputFileTracingIncludes, so they travel as files and are

@@ -16,11 +16,3 @@ export function serialFromState(state: CoinState, shaderVersion: string): string
     .digest("hex")
     .slice(0, 16);
 }
-
-/** The 16 hex digits are exactly 64 bits: two u32 words, no array, no padding. */
-export function serialToWords(serial: string): [number, number] {
-  return [
-    parseInt(serial.slice(0, 8), 16) >>> 0,
-    parseInt(serial.slice(8, 16), 16) >>> 0,
-  ];
-}

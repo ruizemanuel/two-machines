@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { serialFromState, serialToWords } from "../lib/coin/serial";
+import { serialFromState } from "../lib/coin/serial";
+import { serialToWords } from "../lib/coin/words";
 import { INITIAL } from "../lib/coin/state";
 
 describe("serial", () => {

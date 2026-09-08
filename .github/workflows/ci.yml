@@ -1,0 +1,57 @@
+name: ci
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      # The Vulkan loader is not in the runner image; lavapipe needs it to load.
+      # Note this is apt, not the dnf of scripts/prepare-vulkan.mjs: that script
+      # is for the Amazon Linux build container on Vercel and does not run here.
+      - run: sudo apt-get update && sudo apt-get install -y libvulkan1
+      # Pinned CPU renderer: golden images are only stable on this one.
+      # VGPU_CACHE_DIR is not optional. childEnv() looks for lavapipe under
+      # <cwd>/.vgpu-cache; with the default cache dir the installer leaves it
+      # somewhere else, prepareIcd() returns null and the mint test finds no
+      # adapter — a red build whose message points nowhere near the cause.
+      - run: npx vgpu install-software-renderer
+        env:
+          VGPU_CACHE_DIR: ${{ github.workspace }}/.vgpu-cache
+      - run: npx vgpu doctor
+        env:
+          VGPU_CACHE_DIR: ${{ github.workspace }}/.vgpu-cache
+      # pretest bundles the render child; without it the mint suite has nothing
+      # to spawn.
+      - run: npm test
+        env:
+          VGPU_CACHE_DIR: ${{ github.workspace }}/.vgpu-cache
+
+  # Manual only. This is the ONLY way to produce a golden image: the software
+  # renderer does not exist on the developer's Windows machine, so without this
+  # job the image tests are red forever with "Falta la imagen dorada" and there
+  # is nowhere to generate one. It uploads the PNGs as an artifact rather than
+  # committing them, because a human still has to look at each one before it
+  # becomes the reference every later run is measured against.
+  bootstrap-goldens:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm ci
+      - run: sudo apt-get update && sudo apt-get install -y libvulkan1
+      - run: npx vgpu install-software-renderer
+        env:
+          VGPU_CACHE_DIR: ${{ github.workspace }}/.vgpu-cache
+      - run: npm test
+        env:
+          VGPU_CACHE_DIR: ${{ github.workspace }}/.vgpu-cache
+          UPDATE_GOLDEN: "1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-images
+          path: test/golden/*.png

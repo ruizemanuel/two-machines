@@ -12,7 +12,7 @@ import brightSource from "../../shaders/bright.wgsl";
 import blurSource from "../../shaders/blur.wgsl";
 import postSource from "../../shaders/post.wgsl";
 import type { CoinState } from "./state";
-import { serialToWords } from "./serial";
+import { serialToWords } from "./words";
 
 const RELIEF_SIZE = 512;
 const BLOOM_DIVISOR = 4;

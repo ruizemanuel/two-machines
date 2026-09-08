@@ -6,7 +6,7 @@ import { expectGolden } from "./helpers/golden";
 import { SOFTWARE } from "./helpers/software";
 import relief from "../shaders/relief.wgsl";
 import coin from "../shaders/coin.wgsl";
-import { serialToWords } from "../lib/coin/serial";
+import { serialToWords } from "../lib/coin/words";
 
 const [hi, lo] = serialToWords("5de3f2beb643864b");
 const SERIAL = { serial_hi: hi, serial_lo: lo, serial_on: 1 };
