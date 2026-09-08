@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { crc32, inflateSync } from "node:zlib";
-import { encodePng } from "../lib/png.js";
+import { encodePng } from "../lib/png";
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 

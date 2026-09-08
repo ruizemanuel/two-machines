@@ -2,7 +2,7 @@
 // test/page.test.tsx
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import Page from "../app/page.js";
+import Page from "../app/page";
 
 describe("page", () => {
   it("leads with the hook as the heading", () => {

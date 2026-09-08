@@ -1,8 +1,8 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { effect, type Gpu, type Target } from "vgpu";
-import { disposeGpu, renderHeadless } from "../lib/gpu-server.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { disposeGpu, renderHeadless } from "../lib/gpu-server";
+import { SOFTWARE } from "./helpers/software";
 import gradient from "../shaders/gradient.wgsl";
 
 const sha = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");

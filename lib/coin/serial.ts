@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { encodeState, type CoinState } from "./state.js";
+import { encodeState, type CoinState } from "./state";
 
 /** Fingerprint of the STATE, not of the pixels.
  *

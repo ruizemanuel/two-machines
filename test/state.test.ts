@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INITIAL, advance, alignedSpin, canonicalize, encodeState } from "../lib/coin/state.js";
+import { INITIAL, advance, alignedSpin, canonicalize, encodeState } from "../lib/coin/state";
 
 describe("coin state", () => {
   it("spins only while molten", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GET } from "../app/api/mint/route.js";
-import { numParam } from "../lib/coin/query.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { GET } from "../app/api/mint/route";
+import { numParam } from "../lib/coin/query";
+import { SOFTWARE } from "./helpers/software";
 
 const call = (qs: string) => GET(new Request("http://localhost/api/mint?" + qs));
 

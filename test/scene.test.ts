@@ -1,11 +1,11 @@
 import { afterAll, describe, expect, it } from "vitest";
 import fs from "node:fs";
 import { target } from "vgpu";
-import { disposeGpu, sharedGpu } from "../lib/gpu-server.js";
-import { createScene } from "../lib/coin/scene.js";
-import { INITIAL } from "../lib/coin/state.js";
-import { expectGolden } from "./helpers/golden.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { disposeGpu, sharedGpu } from "../lib/gpu-server";
+import { createScene } from "../lib/coin/scene";
+import { INITIAL } from "../lib/coin/state";
+import { expectGolden } from "./helpers/golden";
+import { SOFTWARE } from "./helpers/software";
 
 // Deliberately outside the skipIf block: this one is a text search over a source
 // file, it needs no GPU, and it is the guard on the constraint that makes the

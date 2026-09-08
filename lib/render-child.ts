@@ -1,8 +1,8 @@
 import { target } from "vgpu";
 import { init } from "vgpu/node";
-import { createScene } from "./coin/scene.js";
-import { INITIAL } from "./coin/state.js";
-import { encodePng } from "./png.js";
+import { createScene } from "./coin/scene";
+import { INITIAL } from "./coin/state";
+import { encodePng } from "./png";
 
 const [w, h, spin, melt, mx, my] = process.argv.slice(2, 8).map(Number);
 const serial = process.argv[8];

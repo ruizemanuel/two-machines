@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect } from "vitest";
-import { encodePng } from "../../lib/png.js";
+import { encodePng } from "../../lib/png";
 
 // Intentionally pinned: if vgpu changes Mesa versions, the golden image ceases to exist
 // and the test fails with file not found instead of pixel diff.
@@ -57,7 +57,7 @@ export async function expectGolden(
     return;
   }
 
-  const { readGolden } = await import("./read-png.js");
+  const { readGolden } = await import("./read-png");
   const expected = readGolden(file);
   const differing = compare(rgba, expected);
   if (differing !== 0) {

@@ -1,9 +1,9 @@
 // test/relief.test.ts
 import { afterAll, describe, expect, it } from "vitest";
 import { effect } from "vgpu";
-import { disposeGpu, renderHeadless, sharedGpu } from "../lib/gpu-server.js";
-import { expectGolden } from "./helpers/golden.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { disposeGpu, renderHeadless, sharedGpu } from "../lib/gpu-server";
+import { expectGolden } from "./helpers/golden";
+import { SOFTWARE } from "./helpers/software";
 import relief from "../shaders/relief.wgsl";
 
 // 5de3f2be b643864b, as two words. Literals on purpose: this task must not

@@ -1,12 +1,12 @@
 // test/coin.test.ts
 import { afterAll, describe, expect, it } from "vitest";
 import { effect, target, sampler } from "vgpu";
-import { disposeGpu, sharedGpu } from "../lib/gpu-server.js";
-import { expectGolden } from "./helpers/golden.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { disposeGpu, sharedGpu } from "../lib/gpu-server";
+import { expectGolden } from "./helpers/golden";
+import { SOFTWARE } from "./helpers/software";
 import relief from "../shaders/relief.wgsl";
 import coin from "../shaders/coin.wgsl";
-import { serialToWords } from "../lib/coin/serial.js";
+import { serialToWords } from "../lib/coin/serial";
 
 const [hi, lo] = serialToWords("5de3f2beb643864b");
 const SERIAL = { serial_hi: hi, serial_lo: lo, serial_on: 1 };

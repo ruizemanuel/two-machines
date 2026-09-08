@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { childEnv } from "../../../lib/gpu-server.js";
-import { INITIAL, canonicalize } from "../../../lib/coin/state.js";
-import { serialFromState } from "../../../lib/coin/serial.js";
-import { SHADER_VERSION } from "../../../lib/coin/version.js";
-import { numParam } from "../../../lib/coin/query.js";
+import { childEnv } from "../../../lib/gpu-server";
+import { INITIAL, canonicalize } from "../../../lib/coin/state";
+import { serialFromState } from "../../../lib/coin/serial";
+import { SHADER_VERSION } from "../../../lib/coin/version";
+import { numParam } from "../../../lib/coin/query";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

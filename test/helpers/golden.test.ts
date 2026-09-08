@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { goldenPath, compare } from "./golden.js";
+import { goldenPath, compare } from "./golden";
 
 describe("golden helper", () => {
   it("puts the Mesa version in the filename", () => {

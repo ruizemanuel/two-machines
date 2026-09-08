@@ -5,8 +5,8 @@
 // live in that module — this component is where those things are allowed.
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { init, surface, frameLoop, type FrameLoopHandle, type Gpu, type Surface } from "vgpu";
-import { createScene, type Scene } from "../lib/coin/scene.js";
-import { INITIAL, advance, alignedSpin, canonicalize, type CoinState, type Phase } from "../lib/coin/state.js";
+import { createScene, type Scene } from "../lib/coin/scene";
+import { INITIAL, advance, alignedSpin, canonicalize, type CoinState, type Phase } from "../lib/coin/state";
 
 const STRIKE_MS = 900;
 

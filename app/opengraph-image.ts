@@ -9,6 +9,6 @@ export const contentType = "image/png";
 export default async function Image() {
   // Reuse the route handler directly instead of fetching VERCEL_URL: on a
   // protected preview that fetch comes back 401 and the card breaks.
-  const { GET } = await import("./api/mint/route.js");
+  const { GET } = await import("./api/mint/route");
   return GET(new Request("http://internal/api/mint?spin=0&melt=0&w=1200&h=630"));
 }

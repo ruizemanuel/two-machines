@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { effect, target, sampler } from "vgpu";
-import { disposeGpu, sharedGpu } from "../lib/gpu-server.js";
-import { SOFTWARE } from "./helpers/software.js";
+import { disposeGpu, sharedGpu } from "../lib/gpu-server";
+import { SOFTWARE } from "./helpers/software";
 import bright from "../shaders/bright.wgsl";
 import blur from "../shaders/blur.wgsl";
 import post from "../shaders/post.wgsl";

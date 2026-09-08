@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { serialFromState, serialToWords } from "../lib/coin/serial.js";
-import { INITIAL } from "../lib/coin/state.js";
+import { serialFromState, serialToWords } from "../lib/coin/serial";
+import { INITIAL } from "../lib/coin/state";
 
 describe("serial", () => {
   it("is 16 hex characters", () => {

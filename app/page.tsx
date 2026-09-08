@@ -11,9 +11,9 @@
 // when /api/mint answers — that cannot be split across a server/client
 // boundary.
 import { useCallback, useRef, useState } from "react";
-import { CoinCanvas, type CoinCanvasHandle, type MintResult } from "../components/CoinCanvas.js";
-import { PreviewCard } from "../components/PreviewCard.js";
-import type { Phase } from "../lib/coin/state.js";
+import { CoinCanvas, type CoinCanvasHandle, type MintResult } from "../components/CoinCanvas";
+import { PreviewCard } from "../components/PreviewCard";
+import type { Phase } from "../lib/coin/state";
 
 type ServerStatus =
   | { readonly kind: "idle" }
