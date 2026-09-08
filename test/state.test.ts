@@ -36,4 +36,24 @@ describe("coin state", () => {
     expect(canonicalize(raw).spin).toBe(1.23457);
     expect(encodeState(canonicalize(raw))).toBe(encodeState(raw));
   });
+
+  // 0.123455 is precisely where the old Math.round(n * 1e5) / 1e5 disagreed with
+  // toFixed(5): it rounded up to 0.12346 while encodeState formats the same raw
+  // input down to "0.12345", so the canonical state and the raw state named two
+  // different coins. Picking a value the two roundings agree on hides that.
+  it("canonicalises values where the two roundings used to disagree", () => {
+    const raw = { ...INITIAL, spin: 0.123455 };
+    expect(encodeState(canonicalize(raw))).toBe(encodeState(raw));
+  });
+
+  it("collapses negative zero, so it cannot become a second cache key", () => {
+    const raw = { ...INITIAL, mouse: [-0.000001, 0] as [number, number] };
+    expect(Object.is(canonicalize(raw).mouse[0], 0)).toBe(true);
+    expect(encodeState(canonicalize(raw))).toBe(encodeState(INITIAL));
+  });
+
+  it("advances a whole turn even when the spin already sits on one", () => {
+    expect(alignedSpin(0)).toBeCloseTo(Math.PI * 2, 6);
+    expect(alignedSpin(Math.PI * 2)).toBeCloseTo(Math.PI * 4, 6);
+  });
 });

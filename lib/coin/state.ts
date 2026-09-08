@@ -52,13 +52,22 @@ export function advance(state: CoinState, phase: Phase, dt: number, strikeProgre
   return { ...state, melt: 0, press: 0, flash: 0, time: 0 };
 }
 
-/** Quantises onto the same grid encodeState rounds to.
+/** Quantises onto exactly the grid `encodeState` formats to, and normalises the
+ *  sign of zero so that -0 and 0 cannot become two different keys.
+ *
+ *  It rounds with the same `toFixed(5)` that `encodeState` uses, not with
+ *  `Math.round(n * 1e5) / 1e5`: those two disagree for about 4.5% of values
+ *  (0.123455 rounds up to 0.12346 but formats down to "0.12345"), which would
+ *  leave `encodeState(canonicalize(s))` and `encodeState(s)` naming two coins.
  *
  *  The mint route applies this BEFORE hashing and before rendering. Rounding only
  *  at hash time would leave a hole in the promise the piece makes: two states that
  *  collapse onto one serial would render different pixels. */
 export function canonicalize(state: CoinState): CoinState {
-  const q = (n: number) => Math.round(n * 1e5) / 1e5;
+  const q = (n: number) => {
+    const r = Number(n.toFixed(5));
+    return r === 0 ? 0 : r;   // Number("-0.00000") is -0; collapse it onto +0
+  };
   return { ...state, spin: q(state.spin), melt: q(state.melt), mouse: [q(state.mouse[0]), q(state.mouse[1])] };
 }
 
