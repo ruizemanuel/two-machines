@@ -21,6 +21,7 @@ build/
 # Herramientas
 .playwright-mcp/
 *.tsbuildinfo
+next-env.d.ts
 
 # Sistema
 .DS_Store

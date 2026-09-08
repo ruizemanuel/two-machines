@@ -11,6 +11,12 @@ const RENDER_FILES = [
 ];
 
 const config = {
+  // The native Dawn binding is loaded with a runtime-computed require() inside
+  // node_modules/webgpu, which no bundler can resolve statically. These three are
+  // already listed in outputFileTracingIncludes, so they travel as files and are
+  // resolved from node_modules at runtime — this just stops Next trying to bundle
+  // them first.
+  serverExternalPackages: ["vgpu", "@vgpu/adapter-node", "webgpu"],
   turbopack: {
     rules: { "*.wgsl": { loaders: ["@vgpu/wgsl/loader-webpack"], as: "*.js" } },
   },
