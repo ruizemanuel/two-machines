@@ -6,9 +6,9 @@ No hay ningún PNG en el repo. La moneda que ves es una fórmula — tres pases 
 
 ## La frase permitida sobre el renderer
 
-Esta pieza nunca dice "determinístico" a secas, porque no lo es entre GPUs distintas. Dice:
+Esta pieza nunca dice "determinístico" a secas, porque no lo es entre GPUs distintas. La frase permitida es:
 
-> **Bit a bit idéntico sobre el renderer CPU fijado.**
+> **"bit-identical on the pinned CPU renderer"**
 
 Medido en el Spike 0: cuatro llamadas seguidas al servidor dan el mismo sha256 — **0 píxeles distintos**. El mismo shader, corrido en local sobre una D3D12 real y comparado contra el servidor con `llvmpipe`, da **6.667 píxeles distintos de 756.000 (0,88 %)**. Esa diferencia es real y es de esperar: cada GPU redondea distinto. Por eso el servidor no usa "tu tarjeta gráfica, la que sea" — usa siempre el mismo renderer software fijado (Mesa 25.0.7), y las imágenes doradas de los tests solo se comparan contra ese renderer, nunca contra una GPU real.
 
@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:3000`. El canvas usa tu GPU real vía WebGPU; si el navegador no lo soporta, la página cae al PNG que devuelve el servidor (ver "Degradación" más abajo).
+Abre `http://localhost:3000`. El canvas usa tu GPU real vía WebGPU; si el navegador no lo soporta, la página degrada al PNG que devuelve el servidor a sangre, con el titular encima — nunca a un `Error:` en pantalla.
 
 `/api/mint` en local también renderiza sin GPU — usa el mismo camino de proceso hijo que producción — pero necesita el renderer software instalado primero:
 
