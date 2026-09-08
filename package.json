@@ -11,7 +11,9 @@
     "test": "vitest run",
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "node ./scripts/prepare-vulkan.mjs && next build"
+    "vercel-build": "node ./scripts/prepare-vulkan.mjs && node ./scripts/build-child.mjs && next build",
+    "build:child": "node ./scripts/build-child.mjs",
+    "pretest": "node ./scripts/build-child.mjs"
   },
   "keywords": [],
   "author": "",
