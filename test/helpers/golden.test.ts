@@ -16,4 +16,10 @@ describe("golden helper", () => {
     const b = new Uint8Array([9, 9, 9, 255, 4, 5, 6, 255]);
     expect(compare(a, b)).toBe(1);
   });
+
+  it("reports Infinity when the buffers are different sizes", () => {
+    // expectGolden leans on this: Infinity !== 0, so a size mismatch throws instead
+    // of quietly comparing whatever the two buffers happen to have in common.
+    expect(compare(new Uint8Array(8), new Uint8Array(4))).toBe(Infinity);
+  });
 });

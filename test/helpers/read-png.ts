@@ -10,6 +10,13 @@ export function readGolden(file: string): Uint8Array {
   const idatLength = view.getUint32(8 + 25);
   const raw = inflateSync(png.subarray(8 + 25 + 8, 8 + 25 + 8 + idatLength));
   const stride = width * 4;
+  // Uint8Array.set truncates a short source without complaining, so a golden whose
+  // IDAT is short comes back with its last rows silently zeroed and then fails as an
+  // unreadable "N differing pixels". Same contract as the RangeError encodePng throws.
+  const expected = height * (stride + 1);
+  if (raw.length !== expected) {
+    throw new RangeError(`readGolden: ${file} inflates to ${raw.length} bytes, expected ${expected}`);
+  }
   const out = new Uint8Array(width * height * 4);
   for (let y = 0; y < height; y++) {
     out.set(raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)), y * stride);
