@@ -11,7 +11,7 @@
 // when /api/mint answers — that cannot be split across a server/client
 // boundary.
 import { useCallback, useRef, useState } from "react";
-import { CoinCanvas, type CoinCanvasHandle, type MintResult } from "../components/CoinCanvas";
+import { CoinCanvas, type CoinCanvasHandle, type MintResult, type Unavailable } from "../components/CoinCanvas";
 import { PreviewCard } from "../components/PreviewCard";
 import type { Phase } from "../lib/coin/state";
 
@@ -39,6 +39,11 @@ export default function Page() {
   const [phase, setPhase] = useState<Phase>("molten");
   const [server, setServer] = useState<ServerStatus>({ kind: "idle" });
   const [card, setCard] = useState<Card | null>(null);
+  // Set once CoinCanvas has given up on the live render and shown the server's
+  // PNG instead. Nothing on this page can strike a coin after that, so the
+  // controls that pretend otherwise come off — the headline and the argument
+  // stay, which is the whole point of degrading rather than erroring.
+  const [live, setLive] = useState(true);
 
   const handlePhaseChange = useCallback((next: Phase) => {
     setPhase(next);
@@ -73,6 +78,10 @@ export default function Page() {
     setServer({ kind: "failed" });
   }, []);
 
+  const handleUnavailable = useCallback((_reason: Unavailable) => {
+    setLive(false);
+  }, []);
+
   const handleClick = useCallback(() => {
     if (phase === "molten") coinRef.current?.strike();
     else if (phase === "frozen") coinRef.current?.remelt();
@@ -91,6 +100,7 @@ export default function Page() {
         onPhaseChange={handlePhaseChange}
         onMinted={handleMinted}
         onMintFailed={handleMintFailed}
+        onUnavailable={handleUnavailable}
       />
 
       <div id="head">
@@ -98,26 +108,33 @@ export default function Page() {
         <p>No hay ningún PNG aquí. La moneda es una fórmula, y esa misma fórmula corre en dos sitios.</p>
       </div>
 
-      <div id="where">
-        <div className="spot warm" data-on="1">
-          <i className="pip" />
-          <span>
-            aquí <em>· tu navegador, en vivo</em>
-          </span>
+      {/* Both indicators go with the live render, not just the server one: with
+       *  the canvas replaced by the server's PNG, "tu navegador, en vivo" would
+       *  be describing something that is not happening either. */}
+      {live && (
+        <div id="where">
+          <div className="spot warm" data-on="1">
+            <i className="pip" />
+            <span>
+              aquí <em>· tu navegador, en vivo</em>
+            </span>
+          </div>
+          <div className="spot" data-on={server.kind === "done" ? "1" : "0"}>
+            <i className="pip" />
+            <span>{serverText}</span>
+          </div>
         </div>
-        <div className="spot" data-on={server.kind === "done" ? "1" : "0"}>
-          <i className="pip" />
-          <span>{serverText}</span>
-        </div>
-      </div>
+      )}
 
       <PreviewCard imageUrl={card?.imageUrl ?? null} serial={card?.serial ?? null} visible={card !== null} />
 
-      <div id="foot">
-        <button id="act" type="button" disabled={phase === "striking"} onClick={handleClick}>
-          {BUTTON_LABEL[phase]}
-        </button>
-      </div>
+      {live && (
+        <div id="foot">
+          <button id="act" type="button" disabled={phase === "striking"} onClick={handleClick}>
+            {BUTTON_LABEL[phase]}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

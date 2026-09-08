@@ -40,7 +40,14 @@ export type CoinCanvasProps = {
    *  request was ever sent), so this only drives the server indicator into
    *  "sin respuesta"; nothing about the coin on screen changes. */
   onMintFailed(): void;
+  /** Fired once when the live render is off the table and StaticFallback takes
+   *  the frame: no WebGPU at all, or init() failing twice. The page needs to
+   *  hear it — otherwise it keeps offering an "Acuñar" button that can no
+   *  longer strike anything, over an image the server already rendered. */
+  onUnavailable(reason: Unavailable): void;
 };
+
+export type Unavailable = "no-webgpu" | "device-lost";
 
 type Anim = {
   state: CoinState;
@@ -76,7 +83,7 @@ async function requestMint(state: CoinState): Promise<MintResult | null> {
 }
 
 export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function CoinCanvas(
-  { onPhaseChange, onMinted, onMintFailed },
+  { onPhaseChange, onMinted, onMintFailed, onUnavailable },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -109,7 +116,14 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
   // the server-rendered markup and the first client render match; the switch
   // to StaticFallback happens inside the client-only effect below, as an
   // ordinary post-mount state update rather than a hydration mismatch.
-  const [fallback, setFallback] = useState<"no-webgpu" | "device-lost" | null>(null);
+  const [fallback, setFallback] = useState<Unavailable | null>(null);
+
+  // One place to enter the degraded state, so the page can never be told a
+  // different story from the one on screen.
+  const degrade = (reason: Unavailable) => {
+    setFallback(reason);
+    onUnavailable(reason);
+  };
 
   useImperativeHandle(ref, () => ({
     strike() {
@@ -140,7 +154,7 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
     // no WebGPU degrades to StaticFallback instead of ever starting the loop.
     if (typeof navigator === "undefined") return;
     if (!("gpu" in navigator)) {
-      setFallback("no-webgpu");
+      degrade("no-webgpu");
       return;
     }
     const canvas = canvasRef.current;
@@ -162,7 +176,7 @@ export const CoinCanvas = forwardRef<CoinCanvasHandle, CoinCanvasProps>(function
         try {
           initialized = await init();
         } catch {
-          if (!cancelled) setFallback("device-lost");
+          if (!cancelled) degrade("device-lost");
           return;
         }
       }
