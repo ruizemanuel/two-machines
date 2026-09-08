@@ -1,12 +1,17 @@
 {
-  "name": "vgpu",
+  "name": "dos-maquinas",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "test"
-  },
+  "description": "La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica: el mismo WGSL en el navegador y en un servidor sin GPU.",
+  "author": "ruizemanuel",
+  "license": "MIT",
+  "keywords": [
+    "vgpu",
+    "webgpu",
+    "wgsl",
+    "headless-rendering",
+    "opengraph",
+    "nextjs"
+  ],
   "scripts": {
     "test": "vitest run",
     "dev": "next dev",
@@ -15,9 +20,6 @@
     "build:child": "node ./scripts/build-child.mjs",
     "pretest": "node ./scripts/build-child.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "module",
   "dependencies": {
     "@vgpu/wgsl": "^0.4.0",

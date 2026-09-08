@@ -7,6 +7,7 @@ import { SOFTWARE } from "./helpers/software";
 import relief from "../shaders/relief.wgsl";
 import coin from "../shaders/coin.wgsl";
 import { serialToWords } from "../lib/coin/words";
+import { RELIEF_SIZE } from "../lib/coin/scene";
 
 const [hi, lo] = serialToWords("5de3f2beb643864b");
 const SERIAL = { serial_hi: hi, serial_lo: lo, serial_on: 1 };
@@ -20,7 +21,7 @@ async function renderCoin(melt: number, w = 480, h = 360) {
     magFilter: "linear", minFilter: "linear",
     addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge",
   });
-  const reliefTarget = target(gpu, { size: [512, 512], format: "r16float" });
+  const reliefTarget = target(gpu, { size: [RELIEF_SIZE, RELIEF_SIZE], format: "r16float" });
   effect(gpu, relief, { set: SERIAL }).draw(reliefTarget);
   const out = target(gpu, { size: [w, h], format: "rgba8unorm" });
   effect(gpu, coin, {
@@ -49,5 +50,8 @@ describe.skipIf(!SOFTWARE)("coin pass", () => {
   it("is brighter overall when molten, because the metal emits", async () => {
     const sum = (px: Uint8Array) => px.reduce((n, v, i) => (i % 4 === 3 ? n : n + v), 0);
     expect(sum((await renderCoin(1)).pixels)).toBeGreaterThan(sum((await renderCoin(0)).pixels));
-  }, 120_000);
+    // 180 s, not the 90 s the golden tests take: this is two renders of the
+    // heaviest pass in the suite, and on a cold Linux runner a timeout here
+    // reads exactly like a shader failure while being nothing of the kind.
+  }, 180_000);
 });

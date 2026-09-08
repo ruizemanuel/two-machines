@@ -22,7 +22,10 @@ export function alignedSpin(spin: number): number {
   return Math.ceil(spin / TAU + 1e-9) * TAU;
 }
 
-const easeInOutCubic = (x: number) =>
+/** Exported: components/CoinCanvas.tsx interpolates the spin with it during the
+ *  strike, and it has to be the exact curve advance() uses for the melt or the
+ *  coin visibly kinks as the die comes down. */
+export const easeInOutCubic = (x: number) =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
 export function advance(state: CoinState, phase: Phase, dt: number, strikeProgress: number): CoinState {

@@ -4,7 +4,10 @@ import { init, type NodeGpu } from "vgpu/node";
 import { target } from "vgpu";
 import type { Gpu, Target } from "vgpu";
 
-const ROOT = process.env.VERCEL ? "/var/task" : process.cwd();
+/** Where the deployed bundle lives. This is the one string that decides whether
+ *  the render child and the Vulkan cache can be found in production, so it is
+ *  computed once and imported, never re-derived at a second call site. */
+export const ROOT = process.env.VERCEL ? "/var/task" : process.cwd();
 const CACHE = path.join(ROOT, ".vgpu-cache");
 
 /** The ICD manifest that vgpu downloads carries a relative path; at runtime it

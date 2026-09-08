@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { effect, target, sampler } from "vgpu";
 import { disposeGpu, sharedGpu } from "../lib/gpu-server";
 import { SOFTWARE } from "./helpers/software";
+import { BLOOM_INTENSITY, BLOOM_THRESHOLD, EXPOSURE } from "../lib/coin/scene";
 import bright from "../shaders/bright.wgsl";
 import blur from "../shaders/blur.wgsl";
 import post from "../shaders/post.wgsl";
@@ -13,13 +14,13 @@ describe.skipIf(!SOFTWARE)("bloom chain", () => {
     const gpu = await sharedGpu();
     const linear = sampler(gpu, { magFilter: "linear", minFilter: "linear" });
     const src = target(gpu, { size: [16, 16], format: "rgba16float" });
-    // uniform source at 0.5: below threshold 0.85, nothing should remain
+    // uniform source at 0.5: below the scene's threshold, nothing should remain
     effect(gpu, `@fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
       return vec4f(0.5, 0.5, 0.5, 1.0);
     }`).draw(src);
 
     const out = target(gpu, { size: [4, 4], format: "rgba8unorm" });
-    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [1 / 16, 1 / 16], threshold: 0.85 } }).draw(out);
+    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [1 / 16, 1 / 16], threshold: BLOOM_THRESHOLD } }).draw(out);
     const px = await out.read();
     expect(Math.max(...px.filter((_, i) => i % 4 !== 3))).toBe(0);
   }, 60_000);
@@ -34,7 +35,7 @@ describe.skipIf(!SOFTWARE)("bloom chain", () => {
     }`).draw(src);
 
     const out = target(gpu, { size: [4, 4], format: "rgba8unorm" });
-    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [1 / 16, 1 / 16], threshold: 0.85 } }).draw(out);
+    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [1 / 16, 1 / 16], threshold: BLOOM_THRESHOLD } }).draw(out);
     const px = await out.read();
     expect(px[0]).toBeGreaterThan(200);
   }, 60_000);
@@ -74,7 +75,7 @@ describe.skipIf(!SOFTWARE)("bloom chain", () => {
     }`).draw(src);
 
     const out = target(gpu, { size: [16, 16], format: "rgba8unorm" });
-    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [2 / 16, 2 / 16], threshold: 0.85 } }).draw(out);
+    effect(gpu, bright, { set: { source: src.color, samp: linear, srcTexel: [2 / 16, 2 / 16], threshold: BLOOM_THRESHOLD } }).draw(out);
     const px = await out.read();
     const at = (x: number, y: number) => px[(y * 16 + x) * 4];
 
@@ -87,9 +88,9 @@ describe.skipIf(!SOFTWARE)("bloom chain", () => {
     expect(at(6, 6)).toBe(0);
   }, 60_000);
 
-  // post.wgsl is otherwise pinned only by Task 10's golden, which does not exist
-  // yet and cannot say which stage broke when it moves. This holds the tonemap and
-  // the vignette on their own.
+  // post.wgsl is otherwise pinned only by the full-frame golden, which cannot say
+  // which stage broke when it moves — and which does not exist until someone
+  // generates it on Linux. This holds the tonemap and the vignette on their own.
   it("compresses the exposure curve and darkens the corners", async () => {
     const gpu = await sharedGpu();
     const linear = sampler(gpu, { magFilter: "linear", minFilter: "linear" });
@@ -106,7 +107,7 @@ describe.skipIf(!SOFTWARE)("bloom chain", () => {
     effect(gpu, post, {
       set: {
         scene: scene.color, bloom: bloom.color, samp: linear,
-        res: [8, 8], grain: 0, exposure: 0.55, bloomIntensity: 0.85,
+        res: [8, 8], grain: 0, exposure: EXPOSURE, bloomIntensity: BLOOM_INTENSITY,
       },
     }).draw(out);
     const px = await out.read();

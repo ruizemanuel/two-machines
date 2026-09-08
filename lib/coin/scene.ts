@@ -14,11 +14,15 @@ import postSource from "../../shaders/post.wgsl";
 import type { CoinState } from "./state";
 import { serialToWords } from "./words";
 
-const RELIEF_SIZE = 512;
+// Exported because the tests assert against these exact numbers. Copied as
+// literals into a test file they would keep passing against a value the scene
+// no longer uses, which is the one thing a pinned constant must not do.
+export const RELIEF_SIZE = 512;
+export const BLOOM_THRESHOLD = 0.85;
+export const BLOOM_INTENSITY = 0.85;
+export const EXPOSURE = 0.55;
+
 const BLOOM_DIVISOR = 4;
-const BLOOM_THRESHOLD = 0.85;
-const BLOOM_INTENSITY = 0.85;
-const EXPOSURE = 0.55;
 const BLUR_PASSES = [1.0, 2.4];
 
 export type Scene = {

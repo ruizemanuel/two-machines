@@ -67,6 +67,12 @@ fn relief_at(xz: vec2f) -> f32 {
   // UNPACK_FLIP_Y_WEBGL = true and negated the Z to compensate for that flip;
   // vgpu's target is not flipped, so the compensation has to go. Keeping it
   // renders the face mirrored, subtly enough to survive a casual look.
+  //
+  // The other half of the mockup's lesson, which no golden image can catch for
+  // us: whatever the flip, the axis to touch is Z and never X. Looking down at
+  // the +Y face, +Z runs down the screen while the texture's v runs up, so Z is
+  // the one that disagrees. Negating X instead was tried, and it came out as
+  // straight text rendered in mirror writing.
   var uv = vec2f(xz.x, xz.y) / (2.0 * R) + 0.5;
   var flow = 0.0;
   if (melt > 0.001) {

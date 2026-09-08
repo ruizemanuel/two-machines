@@ -38,13 +38,17 @@ describe("page", () => {
     expect(screen.getByText(/esperando/)).toBeTruthy();
   });
 
+  // Asserted directly, not behind an `if` that never runs: the page must not
+  // contain an unqualified determinism claim at all. Naming the pinned renderer
+  // is the only sanctioned form, and the page does not currently make the claim
+  // in either form — so what this pins is that nobody adds the bare one.
   it("never claims plain determinism", () => {
     withWebGpu();
     const { container } = render(<Page />);
     const text = container.textContent ?? "";
-    if (/bit a bit|idéntico/i.test(text)) {
-      expect(text).toMatch(/renderer|CPU fijado/i);
-    }
+    const claims = /bit a bit|id[ée]ntic|determinis/i;
+    const qualified = /renderer|CPU fijado|llvmpipe|Mesa/i;
+    expect(claims.test(text) && !qualified.test(text)).toBe(false);
   });
 
   // Without WebGPU the coin cannot be struck at all: a live "Acuñar" over the

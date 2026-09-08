@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { childEnv } from "../../../lib/gpu-server";
+import { ROOT, childEnv } from "../../../lib/gpu-server";
 import { serialFromState } from "../../../lib/coin/serial";
 import { SHADER_VERSION } from "../../../lib/coin/version";
 import { mintRequest } from "../../../lib/coin/query";
@@ -23,7 +23,7 @@ export async function GET(request: Request): Promise<Response> {
     serial,
   ];
 
-  const script = path.join(process.env.VERCEL ? "/var/task" : process.cwd(), "dist", "render-child.mjs");
+  const script = path.join(ROOT, "dist", "render-child.mjs");
   const started = Date.now();
 
   // The child process is not optional: the dynamic linker reads LD_LIBRARY_PATH

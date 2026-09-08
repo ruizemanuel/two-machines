@@ -6,8 +6,8 @@ import { expectGolden } from "./helpers/golden";
 import { SOFTWARE } from "./helpers/software";
 import relief from "../shaders/relief.wgsl";
 
-// 5de3f2be b643864b, as two words. Literals on purpose: this task must not
-// depend on lib/coin/serial.ts, which arrives in Task 7.
+// 5de3f2be b643864b, as two words. Literals on purpose: what this file pins is
+// the shader, so it must not fail because lib/coin/serial.ts changed.
 const STRUCK = { serial_hi: 0x5de3f2be, serial_lo: 0xb643864b, serial_on: 1 };
 
 describe.skipIf(!SOFTWARE)("relief pass", () => {

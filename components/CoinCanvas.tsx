@@ -6,7 +6,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { init, surface, frameLoop, type FrameLoopHandle, type Gpu, type Surface } from "vgpu";
 import { createScene, type Scene } from "../lib/coin/scene";
-import { INITIAL, advance, alignedSpin, canonicalize, type CoinState, type Phase } from "../lib/coin/state";
+import { INITIAL, advance, alignedSpin, canonicalize, easeInOutCubic, type CoinState, type Phase } from "../lib/coin/state";
 import StaticFallback from "./StaticFallback";
 
 const STRIKE_MS = 900;
@@ -14,11 +14,6 @@ const STRIKE_MS = 900;
 // to the pointer per frame, which reads as the coin leaning rather than
 // snapping. Anything faster turns the molten disc into a mirror of the cursor.
 const MOUSE_LERP = 0.05;
-
-// Duplicated from lib/coin/state.ts on purpose: that module does not export its
-// easing curve, and the spin interpolation below needs the exact same shape
-// advance() uses for melt so the coin does not visibly kink at the die strike.
-const easeInOutCubic = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
 export type MintResult = {
   readonly serial: string;
@@ -69,7 +64,12 @@ async function requestMint(state: CoinState): Promise<MintResult | null> {
     my: String(state.mouse[1]),
   });
   try {
-    const res = await fetch(`/api/mint?${q}`);
+    // A socket that neither resolves nor rejects would otherwise leave the
+    // indicator on "servidor · renderizando…" for good — the one failure mode
+    // spec §10 does not name. 60 s matches the route's maxDuration: past that
+    // the server has given up too, and the abort lands in the catch below as an
+    // ordinary "the server did not answer".
+    const res = await fetch(`/api/mint?${q}`, { signal: AbortSignal.timeout(60_000) });
     if (!res.ok) return null;
     const blob = await res.blob();
     return {

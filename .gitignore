@@ -23,6 +23,14 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# Capturas sueltas del proceso y la maqueta de la que se portó la pieza: se
+# quedan fuera por decisión del autor. Anclado a la raíz con "/" a propósito —
+# un "*.png" a secas también ignoraría las imágenes doradas de test/golden/,
+# que sí van al repo. El README dice que aquí no hay ningún PNG; esto es lo que
+# lo mantiene cierto cuando alguien escribe `git add -A`.
+/*.png
+/reference/
+
 # Sistema
 .DS_Store
 Thumbs.db

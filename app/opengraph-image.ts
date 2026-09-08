@@ -3,6 +3,10 @@ export const runtime = "nodejs";
 // build` — which the spike already saw hang the compilation — and would freeze
 // the card into the build output. Warm it costs ~1,3 s and the CDN caches it.
 export const dynamic = "force-dynamic";
+// Same render as /api/mint, so the same ceiling: without this the card inherits
+// Vercel's short default and a cold function times out on the one request the
+// piece is judged by.
+export const maxDuration = 60;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

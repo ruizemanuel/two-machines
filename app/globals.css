@@ -1,6 +1,7 @@
 /* Ported from reference/mockup-webgl2.html (#head, #where, #card, #foot). The
  * mockup's fake-server disclaimer (#note) and its no-WebGL2 message (#fail)
- * are dropped: the server leg is real here, and degradation is Task 13. */
+ * are dropped: the server leg is real here, and the degraded state has its own
+ * rules further down (.fallback). */
 
 :root {
   --void: #05060a;
