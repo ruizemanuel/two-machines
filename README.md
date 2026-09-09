@@ -91,6 +91,23 @@ Ese 51,8 KB no salió gratis. `lib/coin/scene.ts`, que corre en el navegador, im
 
 Esas cifras son **221,2 KB de JavaScript**: no incluyen ni el chunk de CSS que sirve Next ni las dos fuentes web de la sección siguiente.
 
+### Cuánto tarda acuñar
+
+| | medido en producción |
+|---|---|
+| Acuñar un estado que nadie pidió antes | **7,7 s** en caliente, 10,5 s en frío |
+| Volver a pedir un estado ya acuñado | **0,32 s**, `X-Vercel-Cache: HIT` |
+
+El spec pedía 1,5 s, medidos en el Spike 0 sobre una escena trivial. Esta no lo es, y el número se
+renegoció hasta donde está la medición. Vale la pena saber por qué no baja: **no depende del tamaño**
+—7,7 s a 1200×630 contra 8,6 s a 1600×900—, así que no son los píxeles, es el coste fijo de cada
+petición: arrancar el proceso hijo, inicializar Dawn y compilar los shaders. Renderizar más pequeño no
+lo arregla. Abaratar el raymarch sí, a cambio de cambiar el aspecto de la moneda y tener que volver a
+generar las imágenes doradas.
+
+Esos segundos los paga quien acuña algo nuevo, con el indicador `servidor · renderizando…` puesto ahí
+justo para eso. Quien recibe el link no los paga: ese estado ya existe y lo sirve el CDN.
+
 ### Assets
 
 En el repo no hay ningún PNG, WOFF ni GLB propio: `public/` está vacío y `test/budgets.test.ts` lo verifica recorriendo el directorio. La moneda — el disco, los dentículos, la leyenda `VGPU.SH` y el número de serie — sale entera de los `.wgsl`, con la fuente bitmap 5×7 empotrada como constantes `u32` en `shaders/lib/font5x7.wgsl`.
@@ -114,7 +131,7 @@ curl -I "https://<tu-dominio>/api/mint?spin=0&melt=0&w=1200&h=630"
 curl -I "https://<tu-dominio>/opengraph-image"
 ```
 
-Las dos deben responder `200` y llevar la cabecera `x-serial`. Y para comprobar el criterio de aceptación 3 (< 1,5 s en caliente) contra el despliegue real:
+Las dos deben responder `200` y llevar la cabecera `x-serial`. Y para comprobar el criterio de aceptación 3 (el presupuesto de acuñado) contra el despliegue real:
 
 ```bash
 MINT_URL="https://<tu-dominio>" npx vitest run test/contract.test.ts
