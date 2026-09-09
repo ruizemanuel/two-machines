@@ -45,9 +45,14 @@ for (const line of sh(`ldd ${driver} 2>&1`).split("\n")) {
   if (m && !ALREADY_PRESENT.has(m[1])) { copy(m[2], m[1]); console.log("dep:", m[1]); }
 }
 
-// the installer's tar.gz only takes up space in the bundle
+// The archive stays. Deleting it looked like free bundle space and was not:
+// getCachedSoftwareRenderer() requires the .tar.gz alongside the .so and the
+// manifest, and verifies its pinned sha256 — that check is how vgpu knows the
+// renderer it is about to load was not tampered with. Without it every call to
+// init({ adapter: "software" }) answers VGPU-NODE-SOFTWARE-RENDERER-MISSING,
+// which is what the first deploy of this endpoint did.
 const tgz = sh(`find ${cache} -name *.tar.gz | head -1`).trim();
-if (tgz) fs.unlinkSync(tgz);
+if (tgz) console.log("archive kept:", (fs.statSync(tgz).size / 1048576).toFixed(1) + " MB");
 
 // The downloaded manifest points at its driver with a relative path, so the
 // loader cannot follow it. childEnv() rewrites it absolute at runtime; do the

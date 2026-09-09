@@ -35,6 +35,20 @@ const WEBGPU_FILES = [
 // include. Vercel builds on linux-x64, where that lands on the binary already
 // listed; excluding the three that can never run there keeps a local build
 // honest about what would deploy.
+// lib/gpu-server.ts walks the cache directory with readdirSync, and a dynamic
+// filesystem read makes the tracer keep the whole project to be safe. The first
+// deployed function listed the docs, the tests, the reference mockup and fifteen
+// loose screenshots among its own files. None of that can be reached at runtime,
+// and the room it wastes is the room the renderer archive needs.
+const NOT_AT_RUNTIME = [
+  "docs/**",
+  "test/**",
+  "reference/**",
+  "scripts/**",
+  "*.png",
+  "*.tsbuildinfo",
+];
+
 const DEAD_PREBUILDS = [
   "node_modules/webgpu/dist/darwin-universal.dawn.node",
   "node_modules/webgpu/dist/linux-arm64.dawn.node",
@@ -72,8 +86,8 @@ const config = {
     return cfg;
   },
   outputFileTracingExcludes: {
-    "/api/mint": DEAD_PREBUILDS,
-    "/opengraph-image": DEAD_PREBUILDS,
+    "/api/mint": [...DEAD_PREBUILDS, ...NOT_AT_RUNTIME],
+    "/opengraph-image": [...DEAD_PREBUILDS, ...NOT_AT_RUNTIME],
   },
   outputFileTracingIncludes: {
     "/api/mint": RENDER_FILES,
