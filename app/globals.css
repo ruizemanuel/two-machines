@@ -274,7 +274,18 @@ body {
   #card.on {
     transform: translateX(-50%) scale(1);
   }
+  /* Not hidden here. This note is the only sentence that explains where the
+     picture came from, and in the degraded state nothing is left to collide
+     with: the indicators and the mint button go away with the live canvas.
+     Hiding it left a narrow visitor with a full-bleed image and no reason for
+     it. Re-laid out instead: full width, left-aligned under the headline, and
+     a size that survives a phone. */
   .fallback-note {
-    display: none;
+    right: 22px;
+    left: 22px;
+    bottom: 22px;
+    max-width: none;
+    text-align: left;
+    font-size: 10px;
   }
 }
