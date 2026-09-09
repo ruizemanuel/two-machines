@@ -60,6 +60,19 @@ export async function expectGolden(
   const { readGolden } = await import("./read-png");
   const expected = readGolden(file);
   const differing = compare(rgba, expected);
+
+  // A deliberate shader change makes every affected golden differ, and that is
+  // exactly when they need regenerating. Writing only when the file is absent
+  // left bootstrap-goldens able to create goldens once and never to update them
+  // — the one job its name claims. Overwriting stays safe because that job
+  // uploads the PNGs as an artifact instead of committing them: a human still
+  // looks at each one before it becomes the reference anything is measured by.
+  if (differing !== 0 && process.env.UPDATE_GOLDEN === "1") {
+    console.warn(`golden ${path.basename(file)}: rewritten, ${differing} pixels differed`);
+    fs.writeFileSync(file, encodePng(rgba, width, height));
+    return;
+  }
+
   if (differing !== 0) {
     const actual = file.replace(/\.png$/, ".actual.png");
     fs.writeFileSync(actual, encodePng(rgba, width, height));
