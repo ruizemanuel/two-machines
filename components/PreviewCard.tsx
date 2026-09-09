@@ -34,7 +34,7 @@ export function PreviewCard({ imageUrl, serial, visible }: PreviewCardProps) {
         {/* An <img> with no src re-requests the current page in some browsers,
          *  so the placeholder frame is a plain div until a PNG exists. */}
         {imageUrl ? (
-          <img src={imageUrl} alt="Previsualización generada al acuñar: la moneda recién congelada." />
+          <img src={imageUrl} alt="Preview generated on minting: the coin as it froze." />
         ) : (
           <div className="img-placeholder" />
         )}
@@ -44,7 +44,7 @@ export function PreviewCard({ imageUrl, serial, visible }: PreviewCardProps) {
           <div className="dsc">{SITE_DESCRIPTION}</div>
         </div>
       </div>
-      <div className="under">nº de serie <b>{serial ?? "·"}</b></div>
+      <div className="under">serial no. <b>{serial ?? "·"}</b></div>
     </div>
   );
 }

@@ -22,20 +22,20 @@ describe("page", () => {
     withWebGpu();
     render(<Page />);
     expect(screen.getByRole("heading", { level: 1 }).textContent)
-      .toContain("un ordenador sin tarjeta gráfica");
+      .toContain("a computer with no graphics card");
   });
 
   it("offers the mint action", () => {
     withWebGpu();
     render(<Page />);
-    expect(screen.getByRole("button", { name: /acuñar/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /mint/i })).toBeTruthy();
   });
 
   it("shows both places, with the server idle at rest", () => {
     withWebGpu();
     render(<Page />);
-    expect(screen.getByText(/tu navegador, en vivo/)).toBeTruthy();
-    expect(screen.getByText(/esperando/)).toBeTruthy();
+    expect(screen.getByText(/your browser, live/)).toBeTruthy();
+    expect(screen.getByText(/waiting/)).toBeTruthy();
   });
 
   // Asserted directly, not behind an `if` that never runs: the page must not
@@ -51,14 +51,14 @@ describe("page", () => {
     expect(claims.test(text) && !qualified.test(text)).toBe(false);
   });
 
-  // Without WebGPU the coin cannot be struck at all: a live "Acuñar" over the
+  // Without WebGPU the coin cannot be struck at all: a live "Mint" over the
   // server's PNG does nothing, and the server indicator would read "esperando"
   // forever. The headline stays — the piece still makes its argument.
   it("drops the controls, not the argument, when the live render is off", () => {
     render(<Page />);
     expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.queryByText(/servidor · esperando/)).toBeNull();
+    expect(screen.queryByText(/server · waiting/)).toBeNull();
     expect(screen.getByRole("heading", { level: 1 }).textContent)
-      .toContain("un ordenador sin tarjeta gráfica");
+      .toContain("a computer with no graphics card");
   });
 });

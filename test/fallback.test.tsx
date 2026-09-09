@@ -18,7 +18,7 @@ describe("degradation", () => {
     render(<StaticFallback reason="no-webgpu" />);
     fireEvent.error(screen.getByRole("img"));
     expect(screen.queryByRole("img")).toBeNull();
-    expect(screen.getByText(/mismo shader/)).toBeTruthy();
+    expect(screen.getByText(/same shader/)).toBeTruthy();
   });
 
   it("never prints the word Error", () => {

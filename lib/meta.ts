@@ -6,7 +6,7 @@
 // live here, and both app/layout.tsx's metadata and components/PreviewCard.tsx
 // read them from this module instead of each carrying its own copy.
 //
-// Spanish, like every other string a visitor reads.
-export const SITE_TITLE = "Dos máquinas";
+// English, like every other string a visitor reads.
+export const SITE_TITLE = "Two machines";
 export const SITE_DESCRIPTION =
-  "La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica.";
+  "The thumbnail of this page is drawn by a computer with no graphics card.";

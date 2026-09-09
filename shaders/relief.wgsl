@@ -7,6 +7,13 @@
 import { glyph_mask } from "./lib/font5x7.wgsl";
 import { sd_triangle, sd_segment } from "./lib/sdf.wgsl";
 
+// A 5-wide glyph drawn across a 5-wide cell leaves nothing between characters,
+// so neighbours touch: "VGPU.SH" came out as one blob and the serial as a smear.
+// Advance six units per character and draw the glyph in five of them. The cell
+// widths below are scaled by the same 6/5, so every stroke keeps the exact width
+// it had — this adds the gap, it does not shrink the type.
+const TRACK: f32 = 6.0 / 5.0;
+
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318531;
 
@@ -64,7 +71,7 @@ fn band(d: f32, w: f32) -> f32 { return 1.0 - smoothstep(0.0, w, abs(d)); }
   {
     let codes = array<u32, 7>(31u, 16u, 25u, 30u, 36u, 28u, 17u);
     let radius = 0.385;
-    let cell_w = 0.030;
+    let cell_w = 0.030 * TRACK;
     let cell_h = 0.042;
     let sweep = cell_w * 7.0 / radius;
     let rel = (ang - PI) ;
@@ -73,20 +80,20 @@ fn band(d: f32, w: f32) -> f32 { return 1.0 - smoothstep(0.0, w, abs(d)); }
     if (t >= 0.0 && t < 1.0) {
       let idx = u32(t * 7.0);
       let cell = vec2f(fract(t * 7.0), (r - (radius - cell_h * 0.5)) / cell_h);
-      h = max(h, 0.89 * glyph_mask(codes[6u - idx], vec2f(1.0 - cell.x, cell.y)));
+      h = max(h, 0.89 * glyph_mask(codes[6u - idx], vec2f((1.0 - cell.x) * TRACK, cell.y)));
     }
   }
 
   // serial number, straight, at the top
   {
-    let cw = 0.0225;
+    let cw = 0.0225 * TRACK;
     let ch = 0.032;
     let origin = vec2f(-cw * 8.0, 0.238 - ch * 0.5);
     let local = (p - origin) / vec2f(cw, ch);
     if (serial_on == 1u && local.x >= 0.0 && local.x < 16.0 && local.y >= 0.0 && local.y < 1.0) {
       let idx = u32(local.x);
       // local is Y-up here; the glyph cell wants Y-down
-      let cell = vec2f(fract(local.x), 1.0 - local.y);
+      let cell = vec2f(fract(local.x) * TRACK, 1.0 - local.y);
       h = max(h, 0.78 * glyph_mask(serial_code(idx), cell));
     }
   }

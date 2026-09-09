@@ -6,7 +6,7 @@
 // CoinCanvas — in jsdom there is no navigator.gpu, so CoinCanvas renders its
 // fallback, and the argument this page makes should not depend on the GPU
 // starting anyway. The whole page is one client component because the button,
-// the two indicators and the canvas share a single state: pressing Acuñar
+// the two indicators and the canvas share a single state: pressing Mint
 // triggers the strike inside CoinCanvas, and the server indicator changes
 // when /api/mint answers — that cannot be split across a server/client
 // boundary.
@@ -29,9 +29,9 @@ type ServerStatus =
 type Card = { readonly imageUrl: string; readonly serial: string };
 
 const BUTTON_LABEL: Record<Phase, string> = {
-  molten: "Acuñar",
-  striking: "Acuñando",
-  frozen: "Volver a fundir",
+  molten: "Mint",
+  striking: "Minting",
+  frozen: "Melt it down",
 };
 
 export default function Page() {
@@ -88,10 +88,10 @@ export default function Page() {
   }, [phase]);
 
   const serverText =
-    server.kind === "idle" ? "servidor · esperando"
-    : server.kind === "pending" ? "servidor · renderizando…"
-    : server.kind === "failed" ? "servidor · sin respuesta"
-    : `servidor · sin gpu · ${Math.round(server.renderMs)} ms`;
+    server.kind === "idle" ? "server · waiting"
+    : server.kind === "pending" ? "server · rendering…"
+    : server.kind === "failed" ? "server · no answer"
+    : `server · no gpu · ${Math.round(server.renderMs)} ms`;
 
   return (
     <div id="stage">
@@ -104,19 +104,19 @@ export default function Page() {
       />
 
       <div id="head">
-        <h1>La miniatura de esta página la dibuja un ordenador sin tarjeta gráfica.</h1>
-        <p>No hay ningún PNG aquí. La moneda es una fórmula, y esa misma fórmula corre en dos sitios.</p>
+        <h1>The thumbnail of this page is drawn by a computer with no graphics card.</h1>
+        <p>There is no PNG here. The coin is a formula, and that same formula runs in two places.</p>
       </div>
 
       {/* Both indicators go with the live render, not just the server one: with
-       *  the canvas replaced by the server's PNG, "tu navegador, en vivo" would
+       *  the canvas replaced by the server's PNG, "your browser, live" would
        *  be describing something that is not happening either. */}
       {live && (
         <div id="where">
           <div className="spot warm" data-on="1">
             <i className="pip" />
             <span>
-              aquí <em>· tu navegador, en vivo</em>
+              here <em>· your browser, live</em>
             </span>
           </div>
           <div className="spot" data-on={server.kind === "done" ? "1" : "0"}>

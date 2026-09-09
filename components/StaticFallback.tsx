@@ -16,14 +16,14 @@ export default function StaticFallback({ reason }: { reason: "no-webgpu" | "devi
       {!broken && (
         <img
           src="/api/mint?spin=0&melt=0&w=1600&h=900"
-          alt="La moneda acuñada, renderizada en el servidor."
+          alt="The minted coin, rendered on the server."
           onError={() => setBroken(true)}
         />
       )}
       <p className="fallback-note">
         {reason === "no-webgpu"
-          ? "Este navegador no dibuja en la GPU, así que esta imagen la ha hecho el servidor — con el mismo shader."
-          : "El dibujo en vivo se ha detenido. Esta imagen la ha hecho el servidor, con el mismo shader."}
+          ? "This browser does not draw on the GPU, so the server made this image — with the same shader."
+          : "The live drawing stopped. The server made this image, with the same shader."}
       </p>
     </div>
   );
