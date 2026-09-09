@@ -40,6 +40,25 @@ export function prepareIcd(): string | null {
   return out;
 }
 
+/** What the function can actually see of its own bundle. A render failure is
+ *  almost always one of these three being false, and without them the child's
+ *  "software renderer is not installed" says nothing about *why* — whether the
+ *  cache failed to travel, or travelled somewhere this code does not look. */
+export function cacheStatus(): Record<string, unknown> {
+  const exists = (p: string) => { try { return fs.existsSync(p); } catch { return false; } };
+  let rootEntries: string[] = [];
+  try { rootEntries = fs.readdirSync(ROOT).slice(0, 40); } catch { /* unreadable */ }
+  return {
+    root: ROOT,
+    cwd: process.cwd(),
+    cacheDir: CACHE,
+    cacheExists: exists(CACHE),
+    loaderExists: exists(path.join(CACHE, "loader")),
+    icd: prepareIcd(),
+    rootEntries,
+  };
+}
+
 export function childEnv(): NodeJS.ProcessEnv {
   const loader = path.join(CACHE, "loader");
   const icd = prepareIcd();

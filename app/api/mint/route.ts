@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { ROOT, childEnv } from "../../../lib/gpu-server";
+import { ROOT, cacheStatus, childEnv } from "../../../lib/gpu-server";
 import { serialFromState } from "../../../lib/coin/serial";
 import { SHADER_VERSION } from "../../../lib/coin/version";
 import { mintRequest } from "../../../lib/coin/query";
@@ -49,7 +49,13 @@ export async function GET(request: Request): Promise<Response> {
 
   if (code !== 0) {
     return Response.json(
-      { error: "render failed", detail: Buffer.concat(err).toString("utf8").slice(0, 2000) },
+      {
+        error: "render failed",
+        detail: Buffer.concat(err).toString("utf8").slice(0, 2000),
+        // What the function sees of its own bundle. A render failure is nearly
+        // always the Vulkan cache not being where this code looks for it.
+        env: cacheStatus(),
+      },
       { status: 500 },
     );
   }

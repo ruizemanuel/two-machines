@@ -37,3 +37,5 @@ Thumbs.db
 
 # Workspace del ejecutor de planes (scratch, no es codigo)
 .superpowers/
+
+.vercel
