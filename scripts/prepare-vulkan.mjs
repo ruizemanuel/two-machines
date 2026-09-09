@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
+import os from "node:os";
 
 const root = process.cwd();
 const cache = path.join(root, ".vgpu-cache");
@@ -38,6 +39,7 @@ if (!loader) throw new Error("could not obtain libvulkan.so.1 after installing v
 console.log("loader:", copy(loader, "libvulkan.so.1"));
 
 const driver = sh(`find ${cache} -name libvulkan_lvp.so | head -1`).trim();
+if (!driver) throw new Error("could not find libvulkan_lvp.so after installing the software renderer");
 for (const line of sh(`ldd ${driver} 2>&1`).split("\n")) {
   const m = line.match(/^\s*(\S+)\s+=>\s+(\/\S+)\s+\(/);
   if (m && !ALREADY_PRESENT.has(m[1])) { copy(m[2], m[1]); console.log("dep:", m[1]); }
@@ -47,8 +49,25 @@ for (const line of sh(`ldd ${driver} 2>&1`).split("\n")) {
 const tgz = sh(`find ${cache} -name *.tar.gz | head -1`).trim();
 if (tgz) fs.unlinkSync(tgz);
 
+// The downloaded manifest points at its driver with a relative path, so the
+// loader cannot follow it. childEnv() rewrites it absolute at runtime; do the
+// same here, because a check that runs against a different configuration than
+// production verifies the wrong thing — and it did: doctor reported that no ICD
+// manifest was found while the manifest sat in the cache, named by no variable.
+const manifest = sh(`find ${cache} -name lvp_icd.json | head -1`).trim();
+if (!manifest) throw new Error("could not find lvp_icd.json after installing the software renderer");
+const icd = JSON.parse(fs.readFileSync(manifest, "utf8"));
+if (icd.ICD) icd.ICD.library_path = driver;
+const icdPath = path.join(os.tmpdir(), "lvp_icd.build.json");
+fs.writeFileSync(icdPath, JSON.stringify(icd));
+
+const runEnv = {
+  ...env,
+  LD_LIBRARY_PATH: loaderDir,
+  VK_ICD_FILENAMES: icdPath,
+  VK_DRIVER_FILES: icdPath,
+};
 // verification: if this fails, the deployment is useless and we need to know here
-const runEnv = { ...env, LD_LIBRARY_PATH: loaderDir };
 const doctor = JSON.parse(sh(`"${bin}" doctor`, { env: runEnv }));
 if (doctor.verdict !== "healthy") {
   console.error(JSON.stringify(doctor, null, 2));
